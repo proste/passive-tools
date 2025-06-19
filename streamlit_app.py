@@ -24,10 +24,10 @@ if 'file_name' not in st.session_state:
 
 
 # --- Step 1: File Upload ---
-st.header("1. Upload Your Excel File")
+st.header("1. Upload Your CSV File")
 uploaded_file = st.file_uploader(
-    "Choose an Excel file (.xlsx or .xls) or CSV file",
-    type=['xlsx', 'xls', 'csv'],
+    "Choose a CSV file",
+    type=['csv'],
 )
 
 # --- Main Logic ---
@@ -38,10 +38,7 @@ if uploaded_file is not None:
 
     try:
         # Load the uploaded file into a pandas DataFrame
-        if uploaded_file.name.endswith(".csv"):
-            df = read_zwcad_dump(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
+        df = read_zwcad_dump(uploaded_file)
         st.session_state.original_df = df
 
         # --- Step 2: Apply Transformation ---
