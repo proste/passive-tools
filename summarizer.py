@@ -226,21 +226,24 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
 
     worksheet = writer.sheets["Souhrn za systém"]
     worksheet.set_column(0, 0, 8, None)
-    worksheet.set_column(1, 1, 45, None)
+    worksheet.set_column(1, 1, 40, None)
     worksheet.set_column(2, 2, 35, None)
     worksheet.set_column(3, 3, 8, None)
     worksheet.set_column(4, 4, 8, None)
-    worksheet.set_column(5, 5, 12, None)
+    worksheet.set_column(5, 5, 10, None)
     for row_i, (k, v) in enumerate(header.items()):
         worksheet.write(row_i + 1, 1, k, {0: format_top_left, len(header) - 1: format_bottom_left}.get(row_i, format_left))
         worksheet.write(row_i + 1, 2, v, {0: format_top_right, len(header) - 1: format_bottom_right}.get(row_i, format_right))
+    worksheet.set_header("&CTECHNICKÁ ZPRÁVA - VÝPIS MATERIÁLU - Souhrn za systém\nEPD Rychnov –  Martin Jindrák, Březová 803, 468 02 Rychnov u Jablonce nad Nisou, E: martin.jindrak@pasivprojekt.cz, T: 778044062")
+    worksheet.set_footer("&CStrana &P z &N")
+    worksheet.set_print_scale(73)
 
     worksheet = writer.sheets["Souhrn celkový"]
-    worksheet.set_column(0, 0, 45, None)
+    worksheet.set_column(0, 0, 40, None)
     worksheet.set_column(1, 1, 35, None)
     worksheet.set_column(2, 2, 8, None)
     worksheet.set_column(3, 3, 8, None)
-    worksheet.set_column(4, 4, 12, None)
+    worksheet.set_column(4, 4, 10, None)
     worksheet.set_column(5, 5, 8, None)
     worksheet.set_column(6, 6, 8, None)
     for row_i, (k, v) in enumerate(header.items()):
@@ -257,6 +260,9 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
             shopping_list_summary.element.iloc[begin],
             format_top
         )
+    worksheet.set_header("&CTECHNICKÁ ZPRÁVA - VÝPIS MATERIÁLU - Souhrn celkový\nEPD Rychnov –  Martin Jindrák, Březová 803, 468 02 Rychnov u Jablonce nad Nisou, E: martin.jindrak@pasivprojekt.cz, T: 778044062")
+    worksheet.set_footer("&CStrana &P z &N")
+    worksheet.set_print_scale(75)
 
     writer.close()
     return bio.getvalue()
