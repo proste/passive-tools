@@ -1,7 +1,12 @@
 import io
+import re
 
 import numpy as np
 import pandas as pd
+
+
+def natural_keys(text):
+    return tuple((int(c) if c.isdigit() else c) for c in re.split(r'(\d+)', text))
 
 
 def safe_float(f):
@@ -156,7 +161,7 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
     shopping_list_df = df.groupby(["element", "spec"]).apply(summarize_element, include_groups=False)
     shopping_list_df["quantity"] = shopping_list_df.quantity.round(decimals=1)
 
-    inventory_df = df.sort_values(["system", "position", "element", "spec"], key=lambda col: col.str.lower())
+    inventory_df = df.copy()
     inventory_df["quantity"] = inventory_df.quantity.round(decimals=2)
 
     rename = {
@@ -187,6 +192,7 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
         .groupby(["system", "position", "element", "spec"], dropna=False)
         .apply(lambda df: pd.Series({**df.iloc[0].to_dict(), "quantity": df.quantity.sum()}))
         .reset_index(drop=True)
+        .sort_values("position", key=lambda col: col.apply(natural_keys))
         .groupby("system")
         .apply(
             lambda df: pd.concat([pd.DataFrame([{"element": df.system.unique().item()}]), df]),
@@ -196,10 +202,16 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
         .rename(columns=rename)
         .to_excel(writer, sheet_name='Souhrn za systém', startrow=len(header) + 2, index=False)
     )
-    (
-        shopping_list_df.reset_index()
+
+    shopping_list_summary = (
+        shopping_list_df
+        .sort_index(key=lambda x: x.str.normalize("NFKD").str.lower())
+        .reset_index()
         [shopping_order]
-        .rename(columns=rename)
+    )
+    (
+        shopping_list_summary
+        .rename(columns=rename, index=rename)
         .to_excel(writer, sheet_name='Souhrn celkový', startrow=len(header) + 2, index=False)
     )
 
@@ -234,6 +246,17 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
     for row_i, (k, v) in enumerate(header.items()):
         worksheet.write(row_i + 1, 0, k, {0: format_top_left, len(header) - 1: format_bottom_left}.get(row_i, format_left))
         worksheet.write(row_i + 1, 1, v, {0: format_top_right, len(header) - 1: format_bottom_right}.get(row_i, format_right))
+
+    format_top = workbook.add_format({"valign": "top"})
+    begins = np.arange(len(shopping_list_summary))[~shopping_list_summary.element.duplicated()]
+    sizes = np.r_[begins[1:], len(shopping_list_summary)] - begins
+    for begin, size in zip(begins, sizes):
+        worksheet.merge_range(
+            len(header) + 3 + begin, 0,
+            len(header) + 3 + begin + size - 1, 0,
+            shopping_list_summary.element.iloc[begin],
+            format_top
+        )
 
     writer.close()
     return bio.getvalue()
