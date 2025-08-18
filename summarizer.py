@@ -1,0 +1,223 @@
+import io
+
+import numpy as np
+import pandas as pd
+
+
+def safe_float(f):
+    if isinstance(f, float):
+        return f
+    try:
+        return float(f.replace(" ", ""))
+    except:
+        return np.nan
+
+
+def parse_spec(spec):
+    def parse_attribute(attribute):
+        k, v = attribute.split("=")
+        for k_ in k.split(","):
+            yield k_, float(v.rstrip("°"))
+
+    return {
+        k: v
+        for attribute in spec.split(", ")
+        for k, v in parse_attribute(attribute)
+    }
+
+def compute_insulation(row: pd.Series) -> float:
+    if not(row.insulation_thickness > 0):
+        return pd.Series()
+    
+    thickness = int(row.insulation_thickness)
+    try:
+        if row.element == "Roura":
+            width = np.pi * (row.diameter + 2 * thickness)
+            length = row.length
+        elif row.element == "Koleno":
+            spec = parse_spec(row.spec)
+            if "D" in spec:
+                width = np.pi * spec["D"]
+                length = 2 * np.pi * (spec["R"] + spec["D"] / 2 + thickness) * spec["a"] / 360
+            else:
+                length = (
+                    spec.get("E", 0)
+                    + spec.get("F", 0)
+                    + (spec["R"] + spec["A"] + row.insulation_thickness) * 2 * np.pi * spec["a"] / 360
+                )
+                width = (
+                    2 * (spec["A"] + 2 * row.insulation_thickness)
+                    + 2 * (spec["B"] + 2 * row.insulation_thickness)
+                )
+        elif row.element == "Potrubí":
+            width, height, length = map(int, row.spec.split(" x "))
+            width = 2 * width + 2 * height + 8 * row.insulation_thickness
+        elif row.element == "Redukce":
+            spec = parse_spec(row.spec)
+            width = np.pi * max(spec["D"], spec["D2"])
+            length = spec["L"]
+        elif row.element == "tlumič hluku":
+            D, L, AI = map(int, row.spec.split(" ")[-1].split("/"))
+            width = np.pi * (D + 2 * AI + 2 * thickness)
+            length = L
+        else:
+            return pd.Series()
+    
+        return pd.Series(
+            {
+                f"insulation_width": width,
+                f"insulation_height": length,
+                f"insulation_area": width * length / 1000000,
+            },
+        )
+    except:
+        return {"insulation_area": -1}
+
+
+def summarize_element(df: pd.DataFrame) -> pd.Series:
+    return pd.Series(
+        {
+            "quantity": df.quantity.sum(),
+            "uom": df.uom.unique()[-1],
+            # "unit_price": df.unit_price.unique()[-1],
+            # "price": df.price.sum(),
+            "PN": df.PN.unique()[-1],
+        },
+    )
+
+
+def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
+    column_names = {
+        "Systém": "system",
+        "Číslo": "position",
+        "PN": "PN",
+        "Název": "element",
+        "Typ": "spec",
+        "Insulation": "insulation_thickness",
+        "Plocha": "element_surface",  # m2?
+        "Průměr": "diameter",
+        "Délka": "length",
+        "Šířka": "width",
+        "Výška": "height",
+        "Součet": "quantity",
+        "--": "uom",
+    }
+    
+    df = df.copy().drop(columns=["č."])
+    df = df.rename(columns=column_names)
+    # normalize
+    df["spec"] = df.spec.fillna(df.element)
+    df["insulation_thickness"] = df.insulation_thickness.fillna(df.pop("izolace"))
+    # drop empty columns
+    allna = df.isna().all(axis=0)
+    df = df.drop(columns=allna[allna].index.tolist())
+    # ducts
+    pieces = df.pop("Vzduchovody, kusů").fillna(1)
+    df["quantity"] = df.quantity.where(pieces <= 1, df.length / 1000)
+    ## rectangular ducts
+    df["spec"] = df.apply(lambda row: f"{row.spec} x {int(row.length)}" if ("Potrubí" in row.element) else row.spec, axis=1)              
+    df["quantity"] = df.quantity.where(df.element.str.contains("Potrubí"), 1)
+    df["uom"] = df.uom.where(df.element.str.contains("Potrubí"), "ks")
+    df = df.reindex(df.index.repeat(pieces)).reset_index(drop=True)
+    return df
+
+
+def insulate_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.join(df.apply(compute_insulation, axis=1).fillna(0))
+    
+    if "insulation_area" in df.columns:
+        # estimate insulation when formula missing
+        idf = df[df.insulation_area > 0][["insulation_thickness", "element_surface", "insulation_area"]]
+        insulation_area_ratio = {
+            thick: (group.insulation_area / group.element_surface).quantile(0.75)
+            for thick, group in idf.groupby("insulation_thickness")
+        }
+        insulation_mask = df.insulation_area == -1
+        df.insulation_area[insulation_mask] = (
+            df.element_surface[insulation_mask] * df.insulation_thickness.map(insulation_area_ratio)
+        )
+
+        insulation_df = df[["system", "insulation_thickness", "insulation_area", "quantity", "uom"]].copy()
+        insulation_df["insulation_area"] = insulation_df.quantity.where(insulation_df.uom == "ks", 1) * insulation_df.insulation_area
+        insulation_df = insulation_df.groupby(["system", "insulation_thickness"]).insulation_area.sum().to_frame().reset_index()
+        insulation_df = insulation_df.rename(columns={"insulation_thickness": "spec", "insulation_area": "quantity"})
+        insulation_df = insulation_df[insulation_df.quantity != 0]
+        insulation_df.spec = insulation_df.spec.apply(lambda s: f"tl={s:.0f}mm")
+        insulation_df[["element", "uom", "position"]] = ["Izolace", "m2", "i"]
+    else:
+        insulation_df = pd.DataFrame()
+    
+    df = pd.concat([df, insulation_df])
+    return df
+
+
+def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+    shopping_list_df = df.groupby(["element", "spec"]).apply(summarize_element, include_groups=False)
+    shopping_list_df["quantity"] = shopping_list_df.quantity.round(decimals=1)
+
+    inventory_df = df.sort_values(["system", "position", "element", "spec"], key=lambda col: col.str.lower())
+    inventory_df["quantity"] = inventory_df.quantity.round(decimals=2)
+
+    rename = {
+        "position": "Č. pozice",
+        "element": "Název",
+        "spec": "Typ",
+        "quantity": "Množství",
+        "uom": "Jednotka",
+        "unit_price": "Cena za jednotku",
+        "price": "Cena celkem",
+        "insulation_thickness": "Izolace (mm)",
+    }
+
+    inventory_order = ["position", "element", "spec", "quantity", "uom", "PN"]
+    shopping_order = ["element", "spec", "quantity", "uom", "PN"]
+    
+    bio = io.BytesIO()
+    writer = pd.ExcelWriter(bio, engine='xlsxwriter')
+    blueprints_df.to_excel(writer, "Data z výkresu", index=False)
+    manual_df.to_excel(writer, "Data doplněná", index=False)
+    (
+        df
+        .loc[df.position.sort_values().index]
+        .to_excel(writer, sheet_name='Data', index=False)
+    )
+    (
+        inventory_df
+        .groupby(["system", "position", "element", "spec"], dropna=False)
+        .apply(lambda df: pd.Series({**df.iloc[0].to_dict(), "quantity": df.quantity.sum()}))
+        .reset_index(drop=True)
+        .groupby("system")
+        .apply(
+            lambda df: pd.concat([pd.DataFrame([{"element": df.system.unique().item()}]), df]),
+            include_groups=True,
+        )
+        [inventory_order]
+        .rename(columns=rename)
+        .to_excel(writer, sheet_name='Souhrn za systém', index=False)
+    )
+    (
+        shopping_list_df.reset_index()
+        [shopping_order]
+        .rename(columns=rename)
+        .to_excel(writer, sheet_name='Souhrn celkový', index=False)
+    )
+
+    worksheet = writer.sheets["Souhrn za systém"]
+    worksheet.set_column(0, 0, 8, None)
+    worksheet.set_column(1, 1, 45, None)
+    worksheet.set_column(2, 2, 35, None)
+    worksheet.set_column(3, 3, 8, None)
+    worksheet.set_column(4, 4, 8, None)
+    worksheet.set_column(5, 5, 12, None)
+
+    worksheet = writer.sheets["Souhrn celkový"]
+    worksheet.set_column(0, 0, 45, None)
+    worksheet.set_column(1, 1, 35, None)
+    worksheet.set_column(2, 2, 8, None)
+    worksheet.set_column(3, 3, 8, None)
+    worksheet.set_column(4, 4, 12, None)
+    worksheet.set_column(5, 5, 8, None)
+    worksheet.set_column(6, 6, 8, None)
+
+    writer.close()
+    return bio.getvalue()
