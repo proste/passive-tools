@@ -151,7 +151,7 @@ def insulate_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.DataFrame, header: dict[str, str] = {}) -> pd.DataFrame:
     shopping_list_df = df.groupby(["element", "spec"]).apply(summarize_element, include_groups=False)
     shopping_list_df["quantity"] = shopping_list_df.quantity.round(decimals=1)
 
@@ -193,14 +193,23 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
         )
         [inventory_order]
         .rename(columns=rename)
-        .to_excel(writer, sheet_name='Souhrn za systém', index=False)
+        .to_excel(writer, sheet_name='Souhrn za systém', startrow=len(header) + 2, index=False)
     )
     (
         shopping_list_df.reset_index()
         [shopping_order]
         .rename(columns=rename)
-        .to_excel(writer, sheet_name='Souhrn celkový', index=False)
+        .to_excel(writer, sheet_name='Souhrn celkový', startrow=len(header) + 2, index=False)
     )
+
+    workbook = writer.book
+    bold_border_style = 2
+    format_left = workbook.add_format({'left': bold_border_style})
+    format_right = workbook.add_format({'right': bold_border_style})
+    format_top_left = workbook.add_format({'top': bold_border_style, 'left': bold_border_style})
+    format_top_right = workbook.add_format({'top': bold_border_style, 'right': bold_border_style})
+    format_bottom_left = workbook.add_format({'bottom': bold_border_style, 'left': bold_border_style})
+    format_bottom_right = workbook.add_format({'bottom': bold_border_style, 'right': bold_border_style})
 
     worksheet = writer.sheets["Souhrn za systém"]
     worksheet.set_column(0, 0, 8, None)
@@ -209,6 +218,9 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
     worksheet.set_column(3, 3, 8, None)
     worksheet.set_column(4, 4, 8, None)
     worksheet.set_column(5, 5, 12, None)
+    for row_i, (k, v) in enumerate(header.items()):
+        worksheet.write(row_i + 1, 1, k, {0: format_top_left, len(header) - 1: format_bottom_left}.get(row_i, format_left))
+        worksheet.write(row_i + 1, 2, v, {0: format_top_right, len(header) - 1: format_bottom_right}.get(row_i, format_right))
 
     worksheet = writer.sheets["Souhrn celkový"]
     worksheet.set_column(0, 0, 45, None)
@@ -218,6 +230,9 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
     worksheet.set_column(4, 4, 12, None)
     worksheet.set_column(5, 5, 8, None)
     worksheet.set_column(6, 6, 8, None)
+    for row_i, (k, v) in enumerate(header.items()):
+        worksheet.write(row_i + 1, 0, k, {0: format_top_left, len(header) - 1: format_bottom_left}.get(row_i, format_left))
+        worksheet.write(row_i + 1, 1, v, {0: format_top_right, len(header) - 1: format_bottom_right}.get(row_i, format_right))
 
     writer.close()
     return bio.getvalue()

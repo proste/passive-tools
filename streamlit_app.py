@@ -1,3 +1,5 @@
+import datetime as dt
+
 import pandas as pd
 import streamlit as st
 
@@ -9,6 +11,9 @@ st.set_page_config(page_title="Passive Tools", page_icon="🛠️", layout="wide
 st.title("🛠️ Passive Tools")
 
 # --- Step 1: File Upload ---
+order = st.text_input("Zakázka", "")
+parcel = st.text_input("Stavba", "")
+order_id = st.text_input("Číslo zakázky", "")
 uploaded_file = st.file_uploader(
     "Choose a file",
     type=['csv', 'xlsx'],
@@ -33,7 +38,14 @@ if uploaded_file is not None:
 
     # Convert the edited DataFrame to Excel format
     with st.spinner('Shrnuji...'):
-        summary_xlsx = summarize_df(blueprints_df, manual_df, transformed_df)
+        header = {
+            "zakázka:": order,
+            "stavba:": parcel,
+            "č. zakázky:": order_id,
+            "vypracoval:": "M. Jindráková",
+            "dne:": dt.date.today().strftime("%-d/%-m/%Y"),
+        }
+        summary_xlsx = summarize_df(blueprints_df, manual_df, transformed_df, header)
     st.success("Shrnuto")
 
     # Create the download button
