@@ -157,8 +157,14 @@ def insulate_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def denormalize_potrubi(row: pd.Series) -> pd.Series:
+    if ("Potrubí" in row.element) and ((row.width, row.height) in [(200, 50), (160, 40)]):
+        return pd.Series({**row.to_dict(), "spec": f"{row.width} x {row.height}", "uom": "m", "quantity": row.length / 1000})
+    return row
+
+
 def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.DataFrame, header: dict[str, str] = {}) -> pd.DataFrame:
-    shopping_list_df = df.groupby(["element", "spec"]).apply(summarize_element, include_groups=False)
+    shopping_list_df = df.apply(denormalize_potrubi, axis=1).groupby(["element", "spec"]).apply(summarize_element, include_groups=False)
     shopping_list_df["quantity"] = shopping_list_df.quantity.round(decimals=1)
 
     inventory_df = df.copy()
