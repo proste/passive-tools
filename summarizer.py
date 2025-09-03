@@ -122,8 +122,8 @@ def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
     df["quantity"] = df.quantity.where(pieces <= 1, df.length / 1000)
     ## rectangular ducts
     df["spec"] = df.apply(lambda row: f"{row.spec} x {int(row.length)}" if ("Potrubí" in row.element) else row.spec, axis=1)              
-    df["quantity"] = df.quantity.where(df.element.str.contains("Potrubí"), 1)
-    df["uom"] = df.uom.where(df.element.str.contains("Potrubí"), "ks")
+    df["quantity"] = df.quantity.where(~df.element.str.contains("Potrubí"), 1)
+    df["uom"] = df.uom.where(~df.element.str.contains("Potrubí"), "ks")
     df = df.reindex(df.index.repeat(pieces)).reset_index(drop=True)
     return df
 
