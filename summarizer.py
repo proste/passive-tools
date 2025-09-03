@@ -159,7 +159,7 @@ def insulate_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def denormalize_potrubi(row: pd.Series) -> pd.Series:
     if ("Potrubí" in row.element) and ((row.width, row.height) in [(200, 50), (160, 40)]):
-        return pd.Series({**row.to_dict(), "spec": f"{row.width} x {row.height}", "uom": "m", "quantity": row.length / 1000})
+        return pd.Series({**row.to_dict(), "spec": " x ".join(row.spec.split(" x ")[:-1]), "uom": "m", "quantity": row.length / 1000})
     return row
 
 
