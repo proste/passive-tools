@@ -149,7 +149,7 @@ def insulate_df(df: pd.DataFrame) -> pd.DataFrame:
         insulation_df = insulation_df.rename(columns={"insulation_thickness": "spec", "insulation_area": "quantity"})
         insulation_df = insulation_df[insulation_df.quantity != 0]
         insulation_df.spec = insulation_df.spec.apply(lambda s: f"tl={s:.0f}mm")
-        insulation_df[["element", "uom", "position"]] = ["Izolace", "m2", "i"]
+        insulation_df[["system", "element", "uom", "position"]] = ["doplňkový a izolační materiál", "Izolace", "m2", "i"]
     else:
         insulation_df = pd.DataFrame()
     
