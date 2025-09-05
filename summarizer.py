@@ -111,7 +111,9 @@ def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy().drop(columns=["č."])
     df = df.rename(columns=column_names)
     # normalize
-    df = df[df.system.notna()]
+    df = df[df[["system", "position"]].notna().any(axis=1)]  # allow system less or position less but not both
+    df["system"] = df.system.fillna("--")
+    df["position"] = df.position.fillna("--")
     df["spec"] = df.spec.fillna(df.element)
     df["insulation_thickness"] = df.insulation_thickness.fillna(df.pop("izolace"))
     # drop empty columns
