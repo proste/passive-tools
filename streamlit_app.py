@@ -24,7 +24,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     if uploaded_file.name.endswith("csv"):
         df = blueprints_df = pd.read_csv(uploaded_file, delimiter=";", encoding="cp1250", decimal=",")
-        manual_df = pd.DataFrame([], columns=["Systém", "Číslo", "Název", "Typ", "Množství", "Jednotka", "PN"])
+        manual_df = pd.DataFrame([], columns=["Systém", "Číslo", "Název", "Typ", "Součet", "--", "PN"])
     else:  # uploaded_file.name.endswith("xlsx")
         blueprints_df =  pd.read_excel(uploaded_file, sheet_name="Data z výkresu")
         manual_df =  pd.read_excel(uploaded_file, sheet_name="Data doplněná")
