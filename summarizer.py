@@ -1,8 +1,12 @@
 import io
+import base64
 import re
 
 import numpy as np
 import pandas as pd
+
+HEADER_B64 = b'JkNURUNITklDS8OBIFpQUsOBVkEgLSBWw51QSVMgTUFURVJJw4FMVSAtIFNvdWhybiB6YSBzeXN0w6ltCkVQRCBSeWNobm92IOKAkyAgTWFydGluIEppbmRyw6FrLCBCxZllem92w6EgODAzLCA0NjggMDIgUnljaG5vdiB1IEphYmxvbmNlIG5hZCBOaXNvdSwgRTogbWFydGluLmppbmRyYWtAcGFzaXZwcm9qZWt0LmN6LCBUOiA3NzgwNDQwNjI='
+HEADER = base64.urlsafe_b64decode(HEADER_B64).decode("utf8")
 
 
 def natural_keys(text):
@@ -242,7 +246,7 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
     for row_i, (k, v) in enumerate(header.items()):
         worksheet.write(row_i + 1, 1, k, {0: format_top_left, len(header) - 1: format_bottom_left}.get(row_i, format_left))
         worksheet.write(row_i + 1, 2, v, {0: format_top_right, len(header) - 1: format_bottom_right}.get(row_i, format_right))
-    worksheet.set_header("&CTECHNICKÁ ZPRÁVA - VÝPIS MATERIÁLU - Souhrn za systém\nEPD Rychnov –  Martin Jindrák, Březová 803, 468 02 Rychnov u Jablonce nad Nisou, E: martin.jindrak@pasivprojekt.cz, T: 778044062")
+    worksheet.set_header(HEADER)
     worksheet.set_footer("&CStrana &P z &N")
     worksheet.set_print_scale(73)
 
@@ -268,7 +272,7 @@ def summarize_df(blueprints_df: pd.DataFrame, manual_df: pd.DataFrame, df: pd.Da
             shopping_list_summary.element.iloc[begin],
             format_top
         )
-    worksheet.set_header("&CTECHNICKÁ ZPRÁVA - VÝPIS MATERIÁLU - Souhrn celkový\nEPD Rychnov –  Martin Jindrák, Březová 803, 468 02 Rychnov u Jablonce nad Nisou, E: martin.jindrak@pasivprojekt.cz, T: 778044062")
+    worksheet.set_header(HEADER)
     worksheet.set_footer("&CStrana &P z &N")
     worksheet.set_print_scale(75)
 
