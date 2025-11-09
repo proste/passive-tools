@@ -4,7 +4,6 @@ import pandas as pd
 import streamlit as st
 
 from summarizer import insulate_df, normalize_df, summarize_df
-from transformations import insulation_transformation
 
 # Show app title and description.
 st.set_page_config(page_title="Passive Tools", page_icon="🛠️", layout="wide")
