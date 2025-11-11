@@ -1,56 +1,56 @@
-import datetime as dt
-
 import pandas as pd
 import streamlit as st
 
-from summarizer import insulate_df, normalize_df, summarize_df
+from loader import load_project, normalize_df
+from elements import ElementFactory, Pricelist
+from summarizer import Summarizer
 
 # Show app title and description.
 st.set_page_config(page_title="Passive Tools", page_icon="🛠️", layout="wide")
 st.title("🛠️ Passive Tools")
 
 # --- Step 1: File Upload ---
-order = st.text_input("Zakázka", "")
-parcel = st.text_input("Stavba", "")
-order_id = st.text_input("Číslo zakázky", "")
 uploaded_file = st.file_uploader(
     "Choose a file",
     type=['csv', 'xlsx'],
 )
 
-# --- Main Logic ---
-# This block runs when a file is uploaded
 if uploaded_file is not None:
-    if uploaded_file.name.endswith("csv"):
-        df = blueprints_df = pd.read_csv(uploaded_file, delimiter=";", encoding="cp1250", decimal=",")
-        manual_df = pd.DataFrame([], columns=["Systém", "Číslo", "Název", "Typ", "Součet", "--", "PN"])
-    else:  # uploaded_file.name.endswith("xlsx")
-        blueprints_df =  pd.read_excel(uploaded_file, sheet_name="Data z výkresu")
-        manual_df =  pd.read_excel(uploaded_file, sheet_name="Data doplněná")
-        df = pd.concat([blueprints_df, manual_df]).reset_index()
+    blueprints_df, manual_df, header_df = load_project(uploaded_file)
+    df = normalize_df(blueprints_df, manual_df)
+    
+    header = header_df.iloc[0].to_dict()
+    header["zakázka:"] = st.text_input("Zakázka", header.get("zakázka:"))
+    header["stavba:"] = st.text_input("Stavba", header.get("stavba:"))
+    header["č. zakázky:"] = st.text_input("Číslo zakázky", header.get("č. zakázky:"))
+    
     st.success("Načteno")
 
-    with st.spinner('Izoluji...'):
-        # transformed_df = df
-        transformed_df = insulate_df(normalize_df(df.copy()))
-    st.success("Zaizolováno")
+    df = normalize_df(blueprints_df, manual_df)
 
-    # Convert the edited DataFrame to Excel format
-    with st.spinner('Shrnuji...'):
-        header = {
-            "zakázka:": order,
-            "stavba:": parcel,
-            "č. zakázky:": order_id,
-            "vypracoval:": "M. Jindráková",
-            "dne:": dt.date.today().strftime("%-d/%-m/%Y"),
-        }
-        summary_xlsx = summarize_df(blueprints_df, manual_df, transformed_df, header)
-    st.success("Shrnuto")
+    pricelist = Pricelist()
+    elements = df.apply(lambda row: ElementFactory.create_element(row, pricelist), axis=1).tolist()
+
+    elements_df = pd.DataFrame([e.to_dict() for e in elements])
+
+    insulation_df = elements_df.groupby('insulation_mm')['insulation_area_m2'].sum().rename("quantity").to_frame().reset_index(names="spec")
+    insulation_df.drop(labels=0, inplace=True)
+    insulation_df['spec'] = insulation_df['spec'].apply(lambda x: f"tl={int(x)}")
+    insulation_df[["system", "name", "unit", "position", "issues"]] = ["doplňkový a izolační materiál", "Izolace", "m2", "i", ""]
+
+    elements_df = pd.concat([elements_df, insulation_df])
+
+    s = Summarizer(header)
+    s.write_inputs(blueprints_df, "Data z výkresu")
+    s.write_inputs(manual_df, "Data doplněná")
+    s.write_inputs(elements_df, "Data")
+    s.write_inventory(elements_df)
+    s.write_shopping_list(elements_df)
 
     # Create the download button
     st.download_button(
         label="💾 Download Excel File",
-        data=summary_xlsx,
+        data=s.close(),
         file_name=f"vypis_{uploaded_file.name.removesuffix('.csv').removesuffix('.xlsx')}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

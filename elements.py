@@ -1,7 +1,25 @@
 import re
 
 import numpy as np
-import pandas as pd
+
+
+def parse_spec_str(spec: str) -> dict:
+    matches = re.findall(r'([a-zA-Z\d,]+)=(\d+)', spec)
+    return {k_: float(v) for k, v in matches for k_ in k.split(",")}
+
+
+class Pricelist:
+    sheet_metal_m2 = 350
+    flange = 220
+    pipe_metal_m2 = 585
+    pipe_fitting_metal_m2 = 814
+    pipe_fitting_piece = 105
+    
+    def __init__(self):
+        pass
+
+    def __getitem__(self, key):
+        raise KeyError()
 
 
 class BaseElement:
