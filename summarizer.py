@@ -107,7 +107,7 @@ class Summarizer:
             .quantity.sum().to_frame()
             .sort_index(key=lambda x: x.str.normalize("NFKD").str.lower())
             .reset_index()
-            .groupby("name")
+            .groupby("name", sort=False)
         ):
             name_df = name_df.copy()
             name_df["quantity"] = name_df.quantity.round(decimals=1)
