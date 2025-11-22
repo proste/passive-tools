@@ -46,10 +46,11 @@ if st.button("Shrnout"):
     s.write_shopping_list(elements_df)
 
     # Create the download button
+    project_name = st.text_input("Stavba", cad_dump.name.removesuffix(".csv"))
     st.download_button(
         label="💾 Download Excel File",
         data=s.close(),
-        file_name=f"vypis_{uploaded_file.name.removesuffix('.csv').removesuffix('.xlsx')}.xlsx",
+        file_name=f"vypis_{project_name}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 else:
