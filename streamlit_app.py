@@ -46,7 +46,7 @@ if st.button("Shrnout"):
     s.write_shopping_list(elements_df)
 
     # Create the download button
-    project_name = st.text_input("Stavba", cad_dump.name.removesuffix(".csv"))
+    project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
     st.download_button(
         label="💾 Download Excel File",
         data=s.close(),
