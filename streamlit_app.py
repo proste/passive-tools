@@ -10,15 +10,13 @@ st.set_page_config(page_title="Passive Tools", page_icon="🛠️", layout="wide
 st.title("🛠️ Passive Tools")
 
 # --- Step 1: File Upload ---
-uploaded_file = st.file_uploader(
-    "Choose a file",
-    type=['csv', 'xlsx'],
-)
+cad_dump = st.file_uploader("CAD Export", type='csv')
+manual_data = st.file_uploader("Data Doplněná", type='xlsx')
 
-if uploaded_file is not None:
-    blueprints_df, manual_df, header_df = load_project(uploaded_file)
+if st.button("Shrnout"):
+    blueprints_df, manual_df, header_df = load_project(cad_dump, manual_data)
     df = normalize_df(blueprints_df, manual_df)
-    
+
     header = header_df.iloc[0].to_dict()
     header["zakázka:"] = st.text_input("Zakázka", header.get("zakázka:"))
     header["stavba:"] = st.text_input("Stavba", header.get("stavba:"))

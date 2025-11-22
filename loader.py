@@ -1,20 +1,19 @@
 import pandas as pd
 
 
-def load_project(uploaded_file):
-    if uploaded_file.name.endswith("csv"):
-        blueprints_df = pd.read_csv(uploaded_file, delimiter=";", encoding="cp1250", decimal=",")
+def load_project(cad_dump, manual_data):
+    blueprints_df = pd.read_csv(cad_dump, delimiter=";", encoding="cp1250", decimal=",")
+    if manual_data is None:
         manual_df = pd.DataFrame([], columns=["Systém", "Číslo", "Název", "Typ", "Součet", "--", "PN"])
         header_df = pd.DataFrame([{
             "zakázka:": "",
             "stavba:": "",
             "č. zakázky:": "",
         }])
-    else:  # uploaded_file.name.endswith("xlsx")
-        blueprints_df = pd.read_excel(uploaded_file, sheet_name="Data z výkresu")
-        manual_df = pd.read_excel(uploaded_file, sheet_name="Data doplněná")
+    else:
+        manual_df = pd.read_excel(manual_data, sheet_name="Data doplněná")
         try:
-            header_df = pd.read_excel(uploaded_file, sheet_name="Hlavička")
+            header_df = pd.read_excel(manual_data, sheet_name="Hlavička")
         except:
             header_df = pd.DataFrame([{
                 "zakázka:": "",
