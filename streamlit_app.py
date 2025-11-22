@@ -12,6 +12,7 @@ st.title("🛠️ Passive Tools")
 # --- Step 1: File Upload ---
 cad_dump = st.file_uploader("CAD Export", type='csv')
 manual_data = st.file_uploader("Data Doplněná", type='xlsx')
+project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
 
 if st.button("Shrnout"):
     blueprints_df, manual_df, header_df = load_project(cad_dump, manual_data)
@@ -46,7 +47,6 @@ if st.button("Shrnout"):
     s.write_shopping_list(elements_df)
 
     # Create the download button
-    project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
     st.download_button(
         label="💾 Download Excel File",
         data=s.close(),
