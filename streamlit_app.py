@@ -14,14 +14,11 @@ cad_dump = st.file_uploader("CAD Export", type='csv')
 manual_data = st.file_uploader("Data Doplněná", type='xlsx')
 project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
 
-if st.button("Shrnout"):
+if cad_dump is not None:
     blueprints_df, manual_df, header_df = load_project(cad_dump, manual_data)
     df = normalize_df(blueprints_df, manual_df)
 
     header = header_df.iloc[0].to_dict()
-    header["zakázka:"] = st.text_input("Zakázka", header.get("zakázka:"))
-    header["stavba:"] = st.text_input("Stavba", header.get("stavba:"))
-    header["č. zakázky:"] = st.text_input("Číslo zakázky", header.get("č. zakázky:"))
     
     st.success("Načteno")
 
