@@ -14,7 +14,6 @@ cad_dump = st.file_uploader("CAD Export", type='csv')
 manual_data = st.file_uploader("Data Doplněná", type='xlsx')
 
 if cad_dump is not None:
-    project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
     blueprints_df, manual_df, header_df = load_project(cad_dump, manual_data)
     df = normalize_df(blueprints_df, manual_df)
 
@@ -44,10 +43,12 @@ if cad_dump is not None:
     s.write_shopping_list(elements_df)
 
     # Create the download button
+    project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
+    file_name = f"vypis_{project_name}.xlsx"
     st.download_button(
-        label="💾 Download Excel File",
+        label=f"💾 Download: {file_name}",
         data=s.close(),
-        file_name=f"vypis_{project_name}.xlsx",
+        file_name=file_name,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 else:
