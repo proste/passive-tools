@@ -12,9 +12,9 @@ st.title("🛠️ Passive Tools")
 # --- Step 1: File Upload ---
 cad_dump = st.file_uploader("CAD Export", type='csv')
 manual_data = st.file_uploader("Data Doplněná", type='xlsx')
-project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
 
 if cad_dump is not None:
+    project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
     blueprints_df, manual_df, header_df = load_project(cad_dump, manual_data)
     df = normalize_df(blueprints_df, manual_df)
 
