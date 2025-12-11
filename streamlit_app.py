@@ -43,8 +43,8 @@ if cad_dump is not None:
     s.write_shopping_list(elements_df)
 
     # Create the download button
-    project_name = st.text_input("Jméno souboru", cad_dump.name.removesuffix(".csv"))
-    file_name = f"vypis_{project_name}.xlsx"
+    project_name = st.text_input("Jméno projektu", cad_dump.name.removesuffix(".csv")[10:])
+    file_name = f"01b_VM {project_name}.xlsx"
     st.download_button(
         label=f"💾 Download: {file_name}",
         data=s.close(),
