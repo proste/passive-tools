@@ -192,7 +192,7 @@ class DampedRoundTube(BaseElement):
     
     @classmethod
     def can_parse(cls, row: dict) -> bool:
-        return row['name'] == 'Tlumič hluku, kulatý'
+        return ('tlumič hluku' in row['name'].lower()) and (row['height_mm'] == row['width_mm'])
 
     def _parse_spec(self):
         if self.width_mm != self.height_mm:
@@ -201,11 +201,7 @@ class DampedRoundTube(BaseElement):
         del self.width_mm
         del self.height_mm
 
-        match = re.search(r'\d+/\d+/(\d+)', self.spec)
-        try:
-            self.acoustic_mm = int(match.group(1))
-        except Exception as ex:
-            self.issues.append(("selhalo vyčtení tloušťky akustické izolace", ex))
+        self.acoustic_mm = 50
         
     def _calculate_insulation_mm2(self) -> float:
         """Hollow cylinder ~ q * pi * d * l"""
@@ -305,7 +301,7 @@ class DampedFlatTube(FlatTube):
 
     @classmethod
     def can_parse(cls, row: dict) -> bool:
-        return row['name'] == 'Tlumič hluku, buňkový'
+        return ('tlumič hluku' in row['name'].lower()) and (row['height_mm'] != row['width_mm'])
 
     def _calculate_price(self, pricelist: Pricelist) -> float:
         return BaseElement._calculate_price(pricelist)
