@@ -32,6 +32,7 @@ def normalize_df(blueprints_df, manual_df):
         'Název': 'name',
         'Typ': 'spec',
         'Insulation': 'insulation_mm',
+        'Tloušťka izolace': 'insulation_mm',
         'izolace': 'insulation_manual_mm',
         'Vzduchovody, kusů': 'duct_count',
         'Průměr': 'diameter_mm',
