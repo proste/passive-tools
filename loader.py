@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def load_project(cad_dump, manual_data):
-    blueprints_df = pd.read_csv(cad_dump, delimiter=";", encoding="cp1250", decimal=",")
+    blueprints_df = pd.read_csv(cad_dump, delimiter=";", decimal=",")
     if manual_data is None:
         manual_df = pd.DataFrame([], columns=["Systém", "Číslo", "Název", "Typ", "Součet", "--", "PN"])
         header_df = pd.DataFrame([{
