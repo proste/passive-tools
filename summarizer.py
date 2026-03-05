@@ -105,7 +105,7 @@ class Summarizer:
             elements_df
             .groupby(["name", "spec", "pn", "unit"], dropna=False)
             .quantity.sum().to_frame()
-            .sort_index(key=lambda x: x.str.normalize("NFKD").str.lower())
+            .sort_index(key=lambda x: x.fillna("").str.normalize("NFKD").str.lower())
             .reset_index()
             .groupby("name", sort=False)
         ):
