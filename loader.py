@@ -5,6 +5,7 @@ def load_project(cad_dump, manual_data):
     try:
         blueprints_df = pd.read_csv(cad_dump, delimiter=";", decimal=",")
     except UnicodeDecodeError:
+        cad_dump.seek(0)
         blueprints_df = pd.read_csv(cad_dump, delimiter=";", encoding="cp1250", decimal=",")
     if manual_data is None:
         manual_df = pd.DataFrame([], columns=["Systém", "Číslo", "Název", "Typ", "Součet", "--", "PN"])
