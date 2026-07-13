@@ -48,6 +48,6 @@ def normalize_df(blueprints_df, manual_df):
         '--': 'unit',
     }
     drop_columns = [c for c in df.columns if c not in column_names]
-    df = df.drop(columns=drop_columns).rename(columns=column_names)
+    df = df.drop(columns=drop_columns).rename(columns=column_names).astype({"position": str})
     df['insulation_mm'] = df['insulation_mm'].fillna(df.pop('insulation_manual_mm')).fillna(0)
     return df
